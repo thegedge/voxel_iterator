@@ -48,20 +48,33 @@ ForwardVoxelIterator::ForwardVoxelIterator(const Eigen::Vector3d &size,
     , tDelta(size.x() / std::fabs(dir.x()),
              size.y() / std::fabs(dir.y()),
              size.z() / std::fabs(dir.z()))
-    , voxel(pos.x() / size.x(), pos.y() / size.y(), pos.z() / size.z())
+    , voxel(static_cast<int>(std::floor(pos.x() / size.x())),
+            static_cast<int>(std::floor(pos.y() / size.y())),
+            static_cast<int>(std::floor(pos.z() / size.z())))
     , currentT(0.0)
 {
+    // These three sections compute how far we have to travel in the given
+    // direction to reach the next voxel boundary along each dimension
     tNext.x() = std::fmod(pos.x(), size.x());
     tNext.y() = std::fmod(pos.y(), size.y());
     tNext.z() = std::fmod(pos.z(), size.z());
+
+    if(pos.x() < 0) tNext.x() += size.x();
+    if(pos.y() < 0) tNext.y() += size.y();
+    if(pos.z() < 0) tNext.z() += size.z();
 
     if(step.x() == 1) tNext.x() = size.x() - tNext.x();
     if(step.y() == 1) tNext.y() = size.y() - tNext.y();
     if(step.z() == 1) tNext.z() = size.z() - tNext.z();
 
+    // Convert these distances into values of t
     tNext.x() /= std::fabs(dir.x());
     tNext.y() /= std::fabs(dir.y());
     tNext.z() /= std::fabs(dir.z());
+
+    if(!std::isfinite(tNext.x())) tNext.x() = std::numeric_limits<float>::infinity();
+    if(!std::isfinite(tNext.y())) tNext.y() = std::numeric_limits<float>::infinity();
+    if(!std::isfinite(tNext.z())) tNext.z() = std::numeric_limits<float>::infinity();
 }
 
 ForwardVoxelIterator ForwardVoxelIterator::operator++() {
